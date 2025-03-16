@@ -11,6 +11,37 @@ import tempfile
 
 load_dotenv()
 
+st.markdown("""
+<style>
+.tooltip {
+    position: relative;
+    display: inline-block;
+    cursor: help;
+}
+
+.tooltip .tooltiptext {
+    visibility: hidden;
+    width: 300px;
+    background-color: black;
+    color: white;
+    text-align: center;
+    border-radius: 7px;
+    padding: 9px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%; /* 위쪽으로 배치 */
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+}
+</style>""", unsafe_allow_html=True)
+
 # 노래 선택 state 초기화
 if "songs" not in st.session_state:
     st.session_state.songs = []
@@ -24,7 +55,7 @@ if "past_selected_songs" not in st.session_state:
 if "searched" not in st.session_state:
     st.session_state.searched = False
 
-# Hugging Face API 설정
+# Hugging Face API 설정(Stable Diffusion)
 API_URL = "https://router.huggingface.co/hf-inference/models/stabilityai/stable-diffusion-3.5-large"
 HEADERS = {"Authorization": f"Bearer {os.getenv('HUGGINGFACE_API_KEY')}"}
 
@@ -111,11 +142,30 @@ def aggregate_features(features_list):
     if not features_list:
         return None
     avg_features = {key: np.mean([f[key] for f in features_list]) for key in features_list[0]}
-    st.write(avg_features)
+    st.write("### 플레이리스트 분석 결과")
+    st.markdown(f"🎵 평균 템포: {avg_features['tempo']:.2f} BPM")
+    st.markdown(f"""
+                <p class="tooltip">🎶 평균 스펙트럴 센트로이드: {avg_features['spectral_centroid']:.2f}
+                    <span class="tooltiptext">이 값이 높을수록 음색이 밝습니다.</span>
+                </p>
+                """, unsafe_allow_html=True)
+    st.markdown(f"""
+                <p class="tooltip">🎸 평균 스펙트럴 밴드위드: {avg_features['spectral_bandwidth']:.2f}
+                    <span class="tooltiptext">이 값이 클수록 음악의 다이내믹 레인지가 넓습니다.</span>
+                </p>
+                """, unsafe_allow_html=True)
     return avg_features
 
 # Stable Diffusion 이미지 생성
-def generate_playlist_image(features):
+def generate_playlist_image(features, style):
+    # 스타일 프롬프트
+    style_prompt = {
+        "Color": "Express the mood of the music using only gradients of different colors. You must not draw any objects.",
+        "Chracter": "Please create a cover with a Japanese anime style character that matches the mood of the music.",
+        "Landscape": "Create a cover that reflects the overall mood of the music in the form of a landscape.",
+        "Abstract": "Create an abstract cover that captures the essence of the music."
+    }.get(style, "Color")
+
     prompt = f"A playlist cover reflecting the overall musical vibe:"
     
     # 🎵 음악의 템포(속도) 분석
@@ -150,6 +200,8 @@ def generate_playlist_image(features):
     else:
         prompt += " A soft and warm sound with subtle variations, ideal for calm and acoustic music."  # 부드럽고 따뜻한 사운드, 차분한 음악에 적합 (어쿠스틱, 포크)
     
+    prompt += f" {style_prompt}"
+
     payload = {"inputs": prompt}
     response = requests.post(API_URL, headers=HEADERS, json=payload)
     
@@ -162,12 +214,17 @@ def generate_playlist_image(features):
 
 def search_songs(query):
     """Spotify에서 노래 검색 후 Deezer에서 미리 듣기 URL 가져오기"""
-    results = sp.search(q=query, limit=5, type='track')
+    results = sp.search(q=query, limit=6, type='track')
     songs = []
 
     for track in results['tracks']['items']:
         song_name = track['name']
         artist_name = track['artists'][0]['name']
+
+        # 검색 결과 중복 제외
+        if any(s['name'] == song_name and s['artist'] == artist_name for s in songs):
+            print(f"\n\nSkipping duplicate: {song_name} - {artist_name}")
+            continue
 
         # Deezer에서 미리 듣기 URL 가져오기 (제목&아티스트 비교)
         deezer_data = get_deezer_preview_url(song_name, artist_name)
@@ -243,16 +300,20 @@ if st.session_state.selected_songs:
             st.write(f"**{song['name']}**")
             st.write(song['artist'])
 
+style = st.radio("**Illerstrate Style**", ["Color", "Chracter", "Landscape", "Abstract"])
 
 if st.session_state.selected_songs and st.button("표지 생성"):
-    selected_song_data = get_selected_song_data()  
-    features_list = [extract_audio_features(s['deezer_preview_url']) for s in selected_song_data if s['deezer_preview_url']]
-    valid_features = [f for f in features_list if f]
-    aggregated_features = aggregate_features(valid_features) if valid_features else None
+    with st.spinner("플레이리스트 분석 중..."):
+        selected_song_data = get_selected_song_data()  
+        features_list = [extract_audio_features(s['deezer_preview_url']) for s in selected_song_data if s['deezer_preview_url']]
+        valid_features = [f for f in features_list if f]
+        aggregated_features = aggregate_features(valid_features) if valid_features else None
     if aggregated_features:
-        image_url = generate_playlist_image(aggregated_features)
-        st.image(image_url, caption="생성된 플레이리스트 표지", width=250)
+        with st.spinner("플레이리스트 표지 생성 중..."):
+            image_url = generate_playlist_image(aggregated_features, style)
+            if image_url:
+                st.image(image_url, caption="생성된 플레이리스트 표지", width=250)
+            else:
+                st.toast("이미지 URL이 유효하지 않습니다.", icon="😢")
     else:
         st.error("오디오 분석을 위한 데이터가 충분하지 않습니다.")
-
-print("\n\n\n\n", st.session_state)
