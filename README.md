@@ -11,4 +11,5 @@ This web application allows users to generate a playlist cover image based on th
 - Generate a playlist cover using Hugging Face's **Stable Diffusion** model based on the aggregated audio features.
 - Customize the cover style (Color, Character, Landscape, or Abstract).
 
-[Playlist imagenerator](https://playlistimagenerator.streamlit.app/)
+## 🚀 Live Demo
+**[Playlist imagenerator](https://playlistimagenerator.streamlit.app/)**
