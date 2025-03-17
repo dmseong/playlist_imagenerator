@@ -161,7 +161,7 @@ def generate_playlist_image(features, style, color):
     # 스타일 프롬프트
     style_prompt = {
         "Color": "Express the mood of the music using only gradients of different colors. You must not draw any objects.",
-        "Chracter": "Please create a cover with a Japanese anime style character that matches the mood of the music.",
+        "Character": "Please create a cover with a Japanese anime style character that matches the mood of the music.",
         "Landscape": "Create a cover that reflects the overall mood of the music in the form of a landscape.",
         "Abstract": "Create an abstract cover that captures the essence of the music."
     }.get(style, "Color")
@@ -202,7 +202,8 @@ def generate_playlist_image(features, style, color):
     else:
         prompt += " A soft and warm sound with subtle variations, ideal for calm and acoustic music."  # 부드럽고 따뜻한 사운드, 차분한 음악에 적합 (어쿠스틱, 포크)
     
-    prompt += f" {style_prompt} {color_prompt}"
+    prompt += f" {style_prompt}"
+    prompt += f" {color_prompt}"
 
     payload = {"inputs": prompt}
     response = requests.post(API_URL, headers=HEADERS, json=payload)
@@ -320,4 +321,7 @@ if st.session_state.selected_songs and st.button("표지 생성"):
             else:
                 st.toast("이미지 URL이 유효하지 않습니다.", icon="😢")
     else:
+        for i in range(len(selected_song_data)):
+            if not selected_song_data[i]['deezer_preview_url']:
+                st.toast(f"{selected_song_data[i]['name']} - {selected_song_data[i]['artist']}의 미리듣기가 제공되지 않습니다.", icon="😢")
         st.error("오디오 분석을 위한 데이터가 충분하지 않습니다.")
