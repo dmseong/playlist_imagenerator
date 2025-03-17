@@ -157,7 +157,7 @@ def aggregate_features(features_list):
     return avg_features
 
 # Stable Diffusion 이미지 생성
-def generate_playlist_image(features, style):
+def generate_playlist_image(features, style, color):
     # 스타일 프롬프트
     style_prompt = {
         "Color": "Express the mood of the music using only gradients of different colors. You must not draw any objects.",
@@ -165,6 +165,8 @@ def generate_playlist_image(features, style):
         "Landscape": "Create a cover that reflects the overall mood of the music in the form of a landscape.",
         "Abstract": "Create an abstract cover that captures the essence of the music."
     }.get(style, "Color")
+
+    color_prompt = f" Use a gradient effect based on the {color}, and express the emotional mood of the music through this gradient."
 
     prompt = f"A playlist cover reflecting the overall musical vibe:"
     
@@ -200,7 +202,7 @@ def generate_playlist_image(features, style):
     else:
         prompt += " A soft and warm sound with subtle variations, ideal for calm and acoustic music."  # 부드럽고 따뜻한 사운드, 차분한 음악에 적합 (어쿠스틱, 포크)
     
-    prompt += f" {style_prompt}"
+    prompt += f" {style_prompt} {color_prompt}"
 
     payload = {"inputs": prompt}
     response = requests.post(API_URL, headers=HEADERS, json=payload)
@@ -300,7 +302,9 @@ if st.session_state.selected_songs:
             st.write(f"**{song['name']}**")
             st.write(song['artist'])
 
-style = st.radio("**Illerstrate Style**", ["Color", "Chracter", "Landscape", "Abstract"])
+cols = st.columns(2)  # 열을 생성
+style = cols[0].radio("**Illustrate Style**", ["Color", "Character", "Landscape", "Abstract"])  # 첫 번째 열에서 라디오 버튼
+color = cols[1].color_picker("**Overall color**", "#ff0000")  # 두 번째 열에서 색상 선택기
 
 if st.session_state.selected_songs and st.button("표지 생성"):
     with st.spinner("플레이리스트 분석 중..."):
@@ -310,7 +314,7 @@ if st.session_state.selected_songs and st.button("표지 생성"):
         aggregated_features = aggregate_features(valid_features) if valid_features else None
     if aggregated_features:
         with st.spinner("플레이리스트 표지 생성 중..."):
-            image_url = generate_playlist_image(aggregated_features, style)
+            image_url = generate_playlist_image(aggregated_features, style, color)
             if image_url:
                 st.image(image_url, caption="생성된 플레이리스트 표지", width=250)
             else:
