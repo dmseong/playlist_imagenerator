@@ -1,11 +1,6 @@
 streamlit==1.30.0
 requests==2.32.0
 spotipy==2.23.0
-diffusers==0.25.0
-transformers==4.38.0
-accelerate==0.25.0
-librosa
-pydub
-python-dotenv
-audioread
-huggingface_hub
+librosa==0.11.0
+python-dotenv==1.0.1
+audioread==3.0.1

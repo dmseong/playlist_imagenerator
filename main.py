@@ -56,7 +56,8 @@ if "searched" not in st.session_state:
     st.session_state.searched = False
 
 # Hugging Face API 설정(Stable Diffusion)
-API_URL = "https://router.huggingface.co/hf-inference/models/stabilityai/stable-diffusion-3.5-large"
+#API_URL = "https://router.huggingface.co/hf-inference/models/stabilityai/stable-diffusion-3.5-large"
+API_URL = "https://router.huggingface.co/hf-inference/models/stabilityai/stable-diffusion-xl-base-1.0"
 HEADERS = {"Authorization": f"Bearer {os.getenv('HUGGINGFACE_API_KEY')}"}
 
 # Spotify API 설정
@@ -212,6 +213,7 @@ def generate_playlist_image(features, style, color):
         st.write(prompt)
         return response.content
     else:
+        st.toast(f"GenAI HTTP response code: {response.status_code}", icon="😢")
         st.error("이미지 생성 실패!")
         return None
 

@@ -8,7 +8,7 @@ This web application allows users to generate a playlist cover image based on th
 - Fetch preview URLs from **[Deezer API](https://developers.deezer.com/)** for selected songs.
 - Analyze audio features such as tempo, spectral centroid, and spectral bandwidth using **Librosa**.
 - Aggregate the features of selected songs to determine the playlist's mood.
-- Generate a playlist cover using Hugging Face's **Stable Diffusion** model based on the aggregated audio features.
+- Generate a playlist cover using Hugging Face's **[Stable Diffusion xl](https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0)** model based on the aggregated audio features.
 - Customize the cover style (Color, Character, Landscape, or Abstract).
 
 ## 🚀 Live Demo
