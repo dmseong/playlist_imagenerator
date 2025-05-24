@@ -74,7 +74,6 @@ sp = spotipy.Spotify(auth_manager=auth_manager)
 
 # Deezer API를 사용하여 특정 노래의 미리 듣기 URL을 가져오는 함수
 def get_deezer_preview_url(song_name, artist_name):
-    """Deezer API를 사용하여 특정 노래의 미리 듣기 URL을 가져옴"""
     search_url = f"https://api.deezer.com/search?q={song_name} {artist_name}"
     
     # API 요청
@@ -381,6 +380,7 @@ valid_selected_songs = [s for s in st.session_state.selected_songs if s in avail
 # 선택한 노래를 업데이트하는 함수
 def update_selected_songs():
     selected = st.session_state.temp_selected_songs
+    print(f"Selected songs: {selected}")
 
     if len(selected) > 5:
         st.toast("⚠️ 노래는 최대 5곡까지만 선택할 수 있어요!", icon="🚫")
@@ -406,10 +406,29 @@ st.multiselect(
 
 # past_selected_songs를 평탄화하고, selected_song_data와 결합
 def get_selected_song_data():
-    selected_song_data = [s for s in st.session_state.songs if f"{s['name']} - {s['artist']}" in st.session_state.selected_songs]
-    flattened_past_songs = [song for sublist in st.session_state.past_selected_songs for song in sublist]
-    selected_song_data = flattened_past_songs + selected_song_data # past_selected_songs를 앞에 붙여서 결합
-    return selected_song_data
+    # 현재 선택된 곡 정보
+    current_data = [
+        s for s in st.session_state.songs
+        if f"{s['name']} - {s['artist']}" in st.session_state.selected_songs
+    ]
+
+    # 평탄화 + 병합
+    flattened_past_songs = [
+        song for sublist in st.session_state.past_selected_songs for song in sublist
+    ]
+    combined = flattened_past_songs + current_data
+
+    # name-artist 기준 중복 제거
+    seen = set()
+    unique = []
+    for song in combined:
+        key = f"{song['name']} - {song['artist']}"
+        if key not in seen:
+            seen.add(key)
+            unique.append(song)
+
+    return unique
+
 
 # 선택한 노래를 가로 정렬로 표시
 if st.session_state.selected_songs:
