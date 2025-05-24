@@ -4,3 +4,4 @@ spotipy==2.23.0
 librosa==0.11.0
 python-dotenv==1.0.1
 audioread==3.0.1
+webcolors==24.11.1
