@@ -222,29 +222,37 @@ def generate_playlist_image(features, style, color, seed_mode):
     # 프롬프트 구성
     if style == "Color":
         style_prompt = (
-            f"Use only a smooth gradient with rich and fully saturated shades of {color_name}. "
-            "The image must not include any characters, objects, textures, or recognizable shapes. "
-            "The entire background must be strictly limited to this gradient. "
-            "Avoid using any other color tones. The gradient should express the emotional mood of the music through color alone."
+            f"The entire image MUST be a smooth and uninterrupted gradient using ONLY rich and saturated shades of {color_name}. "
+            "Do NOT include any characters, objects, or identifiable shapes. "
+            "The image must be abstract, minimal, and focused purely on color. "
+            f"{color_name} must completely dominate the image. No other colors are allowed."
         )
+
     elif style == "Character":
         style_prompt = (
-            "Please create a Japanese anime style character that visually matches the mood of the music. "
-            f"The background MUST consist of a smooth gradient using only rich and fully saturated shades of {color_name}. "
-            f"The {color_name} gradient must fill the entire background, avoiding any red, orange, or purple tones. "
-            f"The {color_name} tone must also influence the lighting and the overall color balance. "
-            "Avoid any textured or complex elements in the background—color dominance is essential."
+            "Place a full-body Japanese anime style character clearly in the center of the image. "
+            "The character MUST reflect the emotional mood of the music through pose, outfit, and expression. "
+            f"The background MUST be a smooth gradient in saturated {color_name} tones. "
+            "The background must be clean and simple, with no distracting elements. "
+            f"The lighting and color tone of the entire image must be influenced by {color_name}."
         )
+
     elif style == "Landscape":
         style_prompt = (
-            "Create a cover that reflects the overall mood of the music in the form of a landscape. "
-            f"The background must include dominant {color_name} hues and avoid clashing tones like red or orange."
+            "Create a visually compelling landscape that reflects the mood of the music. "
+            f"The landscape must feature a strong presence of {color_name} tones throughout the sky, ground, or water. "
+            f"Use only natural elements (mountains, clouds, rivers, trees, etc.) in harmony with {color_name}. "
+            "Avoid cityscapes, buildings, or modern elements."
         )
+
     elif style == "Abstract":
         style_prompt = (
-            "Create an abstract cover that captures the essence of the music. "
-            f"The background should be heavily influenced by {color_name} tones and avoid any realistic imagery."
+            "Design a fully abstract composition that powerfully conveys the emotional tone of the music. "
+            f"The color {color_name} MUST dominate the entire image. "
+            "No recognizable objects or scenes should be visible. "
+            "Use textures, forms, and brush-like patterns to evoke feeling and intensity through color and structure."
         )
+
 
     prompt = "A playlist cover reflecting the overall musical vibe:"
 
@@ -303,7 +311,7 @@ def generate_playlist_image(features, style, color, seed_mode):
         seeds = [11, 22, 33, 44, 55]
         best_img = None
         best_score = float("inf")
-        st.write("여러 이미지를 생성 중입니다...")
+        st.write("여러 이미지 중 최적의 결과를 선택합니다...")
 
         for seed in seeds:
             payload = {"inputs": prompt, "parameters": {"seed": seed}}
@@ -323,9 +331,8 @@ def generate_playlist_image(features, style, color, seed_mode):
             st.error("모든 이미지 생성에 실패했습니다.")
             return None
 
-
+# Spotify에서 노래 검색 후 Deezer에서 미리 듣기 URL 가져오기
 def search_songs(query):
-    """Spotify에서 노래 검색 후 Deezer에서 미리 듣기 URL 가져오기"""
     results = sp.search(q=query, limit=6, type='track')
     songs = []
 
@@ -373,21 +380,26 @@ valid_selected_songs = [s for s in st.session_state.selected_songs if s in avail
 
 # 선택한 노래를 업데이트하는 함수
 def update_selected_songs():
-    # temp_selected_songs를 session_state.selected_songs에 업데이트
-    st.session_state.selected_songs = st.session_state.temp_selected_songs
-    
-    # past_selected_songs를 평탄화하여 selected_songs의 0번째에 삽입
+    selected = st.session_state.temp_selected_songs
+
+    if len(selected) > 5:
+        st.toast("⚠️ 노래는 최대 5곡까지만 선택할 수 있어요!", icon="🚫")
+        # 마지막 선택을 제거하여 5개로 제한
+        st.session_state.temp_selected_songs = selected[:5]
+        return
+
+    st.session_state.selected_songs = selected
+
+    # 과거 선택된 곡을 포함 (선택 결과 반영)
     flattened_past_songs = [song for sublist in st.session_state.past_selected_songs for song in sublist]
-    
-    # past_selected_songs를 selected_songs 앞에 붙여줌
     st.session_state.selected_songs = flattened_past_songs + st.session_state.selected_songs
 
 
 # 노래 선택 UI (유효한 값만 default로 설정)
 st.multiselect(
-    "노래를 선택하세요",
+    "노래를 선택하세요 (최대 5곡)",
     options=available_songs,
-    default=valid_selected_songs,  
+    default=valid_selected_songs[:5],  # 최대 5개까지만 유지
     key="temp_selected_songs",
     on_change=update_selected_songs
 )
@@ -415,7 +427,6 @@ if st.session_state.selected_songs:
 cols = st.columns(3)  # 열을 생성
 style = cols[0].radio("**Illustrate Style**", ["Color", "Character", "Landscape", "Abstract"])  # 첫 번째 열에서 라디오 버튼
 color = cols[1].color_picker("**Overall color**", "#ff0000")  # 두 번째 열에서 색상 선택기
-
 seed_mode = cols[2].radio(
     "🎲 이미지 생성 방식",
     ["고정된 시드로 1장 생성", "여러 시드 중 최적 결과 선택"]
