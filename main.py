@@ -303,6 +303,9 @@ def generate_playlist_image(features, style, color, seed_mode):
         if response.status_code == 200:
             st.write(prompt)
             return response.content
+        elif response.status_code == 402:
+            st.error("이미지 생성에 실패했습니다. API 요금제 문제일 수 있습니다.")
+            return None
         else:
             st.error("이미지 생성 실패!")
             return None
@@ -315,6 +318,9 @@ def generate_playlist_image(features, style, color, seed_mode):
         for seed in seeds:
             payload = {"inputs": prompt, "parameters": {"seed": seed}}
             response = requests.post(API_URL, headers=HEADERS, json=payload)
+            print("API STATUS:", response.status_code)
+            print("RESPONSE:", response.text)
+
             if response.status_code == 200:
                 img_bytes = response.content
                 dom_color = get_dominant_color(img_bytes)
@@ -322,6 +328,9 @@ def generate_playlist_image(features, style, color, seed_mode):
                 if score < best_score:
                     best_score = score
                     best_img = img_bytes
+            elif response.status_code == 402:
+                st.error("이미지 생성에 실패했습니다. API 요금제 문제일 수 있습니다.")
+                return None
 
         if best_img:
             st.write(prompt)
@@ -374,26 +383,19 @@ if st.button("검색") and query:
         st.session_state.searched = True
 
 # 검색 결과가 변경될 때, 기존 선택 목록을 필터링
-available_songs = [f"{s['name']} - {s['artist']}" for s in st.session_state.songs]
+available_songs = list({f"{s['name']} - {s['artist']}" for s in st.session_state.songs} |
+                       {s for s in st.session_state.selected_songs})
 valid_selected_songs = [s for s in st.session_state.selected_songs if s in available_songs]  # ✅ 유효한 값만 유지
 
 # 선택한 노래를 업데이트하는 함수
 def update_selected_songs():
     selected = st.session_state.temp_selected_songs
     print(f"Selected songs: {selected}")
-
     if len(selected) > 5:
         st.toast("⚠️ 노래는 최대 5곡까지만 선택할 수 있어요!", icon="🚫")
-        # 마지막 선택을 제거하여 5개로 제한
         st.session_state.temp_selected_songs = selected[:5]
         return
-
     st.session_state.selected_songs = selected
-
-    # 과거 선택된 곡을 포함 (선택 결과 반영)
-    flattened_past_songs = [song for sublist in st.session_state.past_selected_songs for song in sublist]
-    st.session_state.selected_songs = flattened_past_songs + st.session_state.selected_songs
-
 
 # 노래 선택 UI (유효한 값만 default로 설정)
 st.multiselect(
@@ -406,27 +408,14 @@ st.multiselect(
 
 # past_selected_songs를 평탄화하고, selected_song_data와 결합
 def get_selected_song_data():
-    # 현재 선택된 곡 정보
-    current_data = [
-        s for s in st.session_state.songs
-        if f"{s['name']} - {s['artist']}" in st.session_state.selected_songs
-    ]
-
-    # 평탄화 + 병합
-    flattened_past_songs = [
-        song for sublist in st.session_state.past_selected_songs for song in sublist
-    ]
-    combined = flattened_past_songs + current_data
-
-    # name-artist 기준 중복 제거
-    seen = set()
-    unique = []
-    for song in combined:
+    all_data = [s for sub in st.session_state.past_selected_songs for s in sub] + st.session_state.songs
+    seen, unique = set(), []
+    for song in all_data:
         key = f"{song['name']} - {song['artist']}"
         if key not in seen:
             seen.add(key)
-            unique.append(song)
-
+            if key in st.session_state.selected_songs:
+                unique.append(song)
     return unique
 
 
@@ -459,11 +448,12 @@ if st.session_state.selected_songs and st.button("표지 생성"):
         aggregated_features = aggregate_features(valid_features) if valid_features else None
     if aggregated_features:
         with st.spinner("플레이리스트 표지 생성 중..."):
-            image_url = generate_playlist_image(aggregated_features, style, color, seed_mode)
-            if image_url:
-                st.image(image_url, caption="생성된 플레이리스트 표지", width=250)
+            image_bytes = generate_playlist_image(aggregated_features, style, color, seed_mode)
+            if image_bytes:
+                st.image(image_bytes, caption="생성된 플레이리스트 표지", width=250)
             else:
-                st.toast("이미지 URL이 유효하지 않습니다.", icon="😢")
+                st.toast("이미지 생성 실패", icon="😢")
+
     else:
         for i in range(len(selected_song_data)):
             if not selected_song_data[i]['deezer_preview_url']:
