@@ -3,7 +3,7 @@
 # 🎵 Playlist Image Generator
 This web application allows users to generate a playlist cover image based on the musical features of selected songs. By analyzing audio data, it creates a visual representation of the playlist's vibe.
 
-**Development Period**: 2025.03 ~ 2025.05
+📅 **Development Period**: 2025.03 ~ 2025.05
 
 ## Features
 - Search songs by title or artist using the **[Spotify API](https://developer.spotify.com/)**.
