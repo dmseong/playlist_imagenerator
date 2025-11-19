@@ -18,6 +18,3 @@ This web application allows users to generate a playlist cover image based on th
 <img width="1920" height="1080" alt="2312446_김성희_발표자료03" src="https://github.com/user-attachments/assets/7358eb19-0e00-4a9a-a1ed-3b172a377151" />
 <img width="1920" height="1080" alt="2312446_김성희_발표자료04" src="https://github.com/user-attachments/assets/df75da49-0355-4fa2-996f-20b7af1fe6c3" />
 <img width="1920" height="1080" alt="2312446_김성희_발표자료05" src="https://github.com/user-attachments/assets/191cdff7-0529-4c27-b489-38be097719fd" />
-
-## 🚀 Live Demo
-**[Playlist imagenerator](https://playlistimagenerator.streamlit.app/)**
